@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Contacts API</title>
+
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 500px;
+      margin: 40px auto;
+      padding: 0 20px;
+    }
+    input, select {
+      display: block;
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 12px;
+      box-sizing: border-box;
+    }
+    button {
+      padding: 8px 16px;
+      cursor: pointer;
+      margin-right: 6px;
+    }
+    .error {
+      color: red;
+      font-size: 14px;
+    }
+    ul {
+      list-style: none;
+      padding: 0;
+    }
+    li {
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      padding: 10px;
+      margin-bottom: 8px;
+      position: relative;
+    }
+    li strong {
+      display: block;
+    }
+    .category {
+      display: inline-block;
+      font-size: 12px;
+      background: #eee;
+      padding: 2px 8px;
+      border-radius: 10px;
+      margin-top: 4px;
+    }
+    .actions {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+    }
+    .delete-button {
+      background: #f8d7da;
+      border: 1px solid #f5c2c7;
+      border-radius: 4px;
+      font-size: 12px;
+      padding: 4px 8px;
+    }
+    .edit-button {
+      background: #cfe2ff;
+      border: 1px solid #9ec5fe;
+      border-radius: 4px;
+      font-size: 12px;
+      padding: 4px 8px;
+    }
+    .add-form, .edit-form {
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 16px;
+      margin-bottom: 24px;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    function AddContactForm({ token, onContactAdded }) {
+      const [name, setName] = useState("");
+      const [email, setEmail] = useState("");
+      const [phone, setPhone] = useState("");
+      const [category, setCategory] = useState("personal");
+      const [errorMessage, setErrorMessage] = useState("");
+
+      async function handleSubmit(event) {
+        event.preventDefault();
+        setErrorMessage("");
+
+        try {
+          const response = await fetch("/contacts", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ name, email, phone, category }),
+          });
+
+          const data = await response.json();
+
+          if (!response.ok) {
+            setErrorMessage(data.error || "Could not create contact");
+            return;
+          }
+
+          setName("");
+          setEmail("");
+          setPhone("");
+          setCategory("personal");
+          onContactAdded();
+        } catch (error) {
+          setErrorMessage("Could not connect to the server");
+        }
+      }
+
+      return (
+        <form className="add-form" onSubmit={handleSubmit}>
+          <input
+            type="text"
+            placeholder="Name"
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+            required
+          />
+          <input
+            type="email"
+            placeholder="Email"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            required
+          />
+          <input
+            type="text"
+            placeholder="Phone"
+            value={phone}
+            onChange={(event) => setPhone(event.target.value)}
+            required
+          />
+          <select value={category} onChange={(event) => setCategory(event.target.value)}>
+            <option value="personal">Personal</option>
+            <option value="work">Work</option>
+          </select>
+          <button type="submit">Add contact</button>
+          {errorMessage && <p className="error">{errorMessage}</p>}
+        </form>
+      );
+    }
+
+    function EditContactForm({ token, contact, onSaved, onCancel }) {
+      const [name, setName] = useState(contact.name);
+      const [email, setEmail] = useState(contact.email);
+      const [phone, setPhone] = useState(contact.phone);
+      const [category, setCategory] = useState(contact.category);
+      const [errorMessage, setErrorMessage] = useState("");
+
+      async function handleSubmit(event) {
+        event.preventDefault();
+        setErrorMessage("");
+
+        try {
+          const response = await fetch(`/contacts/${contact._id}`, {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ name, email, phone, category }),
+          });
+
+          const data = await response.json();
+
+          if (!response.ok) {
+            setErrorMessage(data.error || "Could not update contact");
+            return;
+          }
+
+          onSaved();
+        } catch (error) {
+          setErrorMessage("Could not connect to the server");
+        }
+      }
+
+      return (
+        <form className="edit-form" onSubmit={handleSubmit}>
+          <input
+            type="text"
+            placeholder="Name"
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+            required
+          />
+          <input
+            type="email"
+            placeholder="Email"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            required
+          />
+          <input
+            type="text"
+            placeholder="Phone"
+            value={phone}
+            onChange={(event) => setPhone(event.target.value)}
+            required
+          />
+          <select value={category} onChange={(event) => setCategory(event.target.value)}>
+            <option value="personal">Personal</option>
+            <option value="work">Work</option>
+          </select>
+          <button type="submit">Save</button>
+          <button type="button" onClick={onCancel}>Cancel</button>
+          {errorMessage && <p className="error">{errorMessage}</p>}
+        </form>
+      );
+    }
+
+    function ContactList({ token }) {
+      const [contacts, setContacts] = useState([]);
+      const [errorMessage, setErrorMessage] = useState("");
+      const [isLoading, setIsLoading] = useState(true);
+      const [editingContactId, setEditingContactId] = useState(null);
+
+      async function loadContacts() {
+        setIsLoading(true);
+        try {
+          const response = await fetch("/contacts", {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+
+          const data = await response.json();
+
+          if (!response.ok) {
+            setErrorMessage(data.error || "Could not load contacts");
+            return;
+          }
+
+          setContacts(data);
+        } catch (error) {
+          setErrorMessage("Could not connect to the server");
+        } finally {
+          setIsLoading(false);
+        }
+      }
+
+      useEffect(() => {
+        loadContacts();
+      }, [token]);
+
+      async function handleDelete(contactId) {
+        const confirmed = window.confirm("Delete this contact?");
+        if (!confirmed) return;
+
+        try {
+          const response = await fetch(`/contacts/${contactId}`, {
+            method: "DELETE",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+
+          if (!response.ok) {
+            const data = await response.json();
+            setErrorMessage(data.error || "Could not delete contact");
+            return;
+          }
+
+          loadContacts();
+        } catch (error) {
+          setErrorMessage("Could not connect to the server");
+        }
+      }
+
+      function handleEditSaved() {
+        setEditingContactId(null);
+        loadContacts();
+      }
+
+      return (
+        <div>
+          <h1>Contacts</h1>
+          <AddContactForm token={token} onContactAdded={loadContacts} />
+
+          {errorMessage && <p className="error">{errorMessage}</p>}
+          {isLoading ? (
+            <p>Loading contacts...</p>
+          ) : (
+            <ul>
+              {contacts.length === 0 && <p>No contacts found.</p>}
+              {contacts.map((contact) =>
+                editingContactId === contact._id ? (
+                  <li key={contact._id}>
+                    <EditContactForm
+                      token={token}
+                      contact={contact}
+                      onSaved={handleEditSaved}
+                      onCancel={() => setEditingContactId(null)}
+                    />
+                  </li>
+                ) : (
+                  <li key={contact._id}>
+                    <div className="actions">
+                      <button
+                        className="edit-button"
+                        onClick={() => setEditingContactId(contact._id)}
+                      >
+                        Edit
+                      </button>
+                      <button
+                        className="delete-button"
+                        onClick={() => handleDelete(contact._id)}
+                      >
+                        Delete
+                      </button>
+                    </div>
+                    <strong>{contact.name}</strong>
+                    {contact.email} — {contact.phone}
+                    <div className="category">{contact.category}</div>
+                  </li>
+                )
+              )}
+            </ul>
+          )}
+        </div>
+      );
+    }
+
+    function LoginForm() {
+      const [email, setEmail] = useState("");
+      const [password, setPassword] = useState("");
+      const [errorMessage, setErrorMessage] = useState("");
+      const [token, setToken] = useState(null);
+
+      async function handleSubmit(event) {
+        event.preventDefault();
+        setErrorMessage("");
+
+        try {
+          const response = await fetch("/auth/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, password }),
+          });
+
+          const data = await response.json();
+
+          if (!response.ok) {
+            setErrorMessage(data.error || "Login failed");
+            return;
+          }
+
+          setToken(data.token);
+        } catch (error) {
+          setErrorMessage("Could not connect to the server");
+        }
+      }
+
+      if (token) {
+        return <ContactList token={token} />;
+      }
+
+      return (
+        <div>
+          <h1>Login</h1>
+          <form onSubmit={handleSubmit}>
+            <input
+              type="email"
+              placeholder="Email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              required
+            />
+            <input
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              required
+            />
+            <button type="submit">Log in</button>
+          </form>
+          {errorMessage && <p className="error">{errorMessage}</p>}
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById("root"));
+    root.render(<LoginForm />);
+  </script>
+
+</body>
+</html>
