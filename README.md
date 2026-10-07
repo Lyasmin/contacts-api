@@ -96,7 +96,7 @@ Protected routes expect the header `Authorization: Bearer <token>`. Requests wit
 
 ### Test plan
 
-The formal test plan is available in [`docs/Test_Plan_ContactsAPI_EN.xlsx`](docs/Test_Plan_ContactsAPI_EN.xlsx). It defines **16 test cases** (11 API and 5 UI), linked to 8 functional requirements, each with preconditions, steps, expected result, actual result and status. All 16 cases were executed and passed.
+The formal test plan is available in [`docs/Test_Plan_ContactsAPI_EN.xlsx`](docs/Test_Plan_ContactsAPI.xlsx). It defines **16 test cases** (11 API and 5 UI), linked to 8 functional requirements, each with preconditions, steps, expected result, actual result and status. All 16 cases were executed and passed.
 
 ### Automated tests (Cypress)
 
