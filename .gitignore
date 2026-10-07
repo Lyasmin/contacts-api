@@ -1,2 +1,19 @@
-node_modules
+# Dependencies
+node_modules/
+
+# Environment variables (secrets)
 .env
+cypress.env.json
+
+# Cypress generated files
+cypress/videos/
+cypress/screenshots/
+cypress/downloads/
+
+# Logs
+npm-debug.log*
+*.log
+
+# OS files
+Thumbs.db
+.DS_Store

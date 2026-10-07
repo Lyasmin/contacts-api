@@ -5,8 +5,8 @@ describe("Contacts API", () => {
     it("TC-01 & TC-07: Create a new contact with valid data and access the contacts route with a valid token", () => {
         //Step 1: Log in via API to get a valid token
         cy.request("POST", "/auth/login", {
-            email: "firstuser@email.com",
-            password: "password123",
+             email: "firstuser@email.com",
+             password: "password123",
         }).then((loginResponse) => {
             expect(loginResponse.status).to.eq(200);
             const token = loginResponse.body.token;
